@@ -2,8 +2,9 @@ import isFunction from './isFunction'
 import isFunctionComponent from './isFunctionComponent'
 import mountNativeElement from './mountNativeElement'
 
-export default function mountComponent(virtualDOM, container) {
+export default function mountComponent(virtualDOM, container, oldDOM) {
   let nextVirtualDOM = null
+  let component = null
   // ❓ 判断是类组件还是函数组件
   if (isFunctionComponent(virtualDOM)) {
     // 处理函数组件
@@ -11,14 +12,24 @@ export default function mountComponent(virtualDOM, container) {
   } else {
     // 处理类组件
     nextVirtualDOM = buildClassComponent(virtualDOM)
+    // component从buildClassComponent绑定
+    component = nextVirtualDOM.component
   }
 
   // 判断是否是组件嵌套
   if (isFunction(nextVirtualDOM)) {
-    mountComponent(nextVirtualDOM, container)
+    mountComponent(nextVirtualDOM, container, oldDOM)
   } else {
     // 解析 普通 virtualDOM
-    mountNativeElement(nextVirtualDOM, container)
+    mountNativeElement(nextVirtualDOM, container, oldDOM)
+  }
+
+  // 组件挂载完成: 处理类组件的ref
+  if (component) {
+    component.componentDidMount()
+    if (component.props && component.props.ref) {
+      component.props.ref(component)
+    }
   }
 }
 
@@ -34,5 +45,8 @@ function buildClassComponent(virtualDOM) {
   const component = new virtualDOM.type(virtualDOM.props || {})
   // 获取 virtualDOM
   const nextVirtualDOM = component.render()
+
+  // 获取组件的实例对象: 传递给 mountNavtiveElement, 然后再使用 component的setDOM方法设置virtualDOM
+  nextVirtualDOM.component = component
   return nextVirtualDOM
 }

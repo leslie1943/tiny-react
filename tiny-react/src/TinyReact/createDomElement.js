@@ -21,5 +21,11 @@ export default function createDomElement(virtualDOM) {
     mountElement(child, newElement)
   })
 
+  // 如果有props 并且 props.ref
+  // ref: 就是绑定的DOM实例对象(native和component都是)
+  if (virtualDOM.props && virtualDOM.props.ref) {
+    virtualDOM.props.ref(newElement)
+  }
+
   return newElement
 }
